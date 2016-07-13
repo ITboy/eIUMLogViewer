@@ -64,7 +64,7 @@ var parseLogLine = function() {
     var logTime = moment(logTimeStr, "MM-DD-YYYY HH:mm:ss Z");
     var iumRule = iumRuleStr.substr(1, iumRuleStr.length-2);
     var logLevel = logLevelStr.substr(0, logLevelStr.length-1);
-    var shortMessage = message.substr(0, 50);
+    var shortMessage = message.substr(0, 300);
 /*
     console.log("-------------------------%s", logTimeStr);
     console.log("-------------------------%s", thread);
@@ -78,7 +78,6 @@ var parseLogLine = function() {
         thread:thread,
         logLevel:logLevel,
         iumRule:iumRule,
-        thread, thread,
         shortMessage:shortMessage,
         message:message
       }
@@ -89,18 +88,9 @@ var parseLogLine = function() {
 
 var formatHtml = function() {
   return through2({objectMode: true}, function(chunk, enc, callback) {
-    var logLineFormat = `<div class='log_line'>
-                        <div class='log_line_head'>
-                                <div class='log_line_time'>%s</div>
-                                <div class='log_line_thread'>%s</div>
-                                <div class='log_line_rule'>%s</div>
-                                <div class='log_line_log_level'>%s</div>
-                                <div class='log_line_short_message'>%s</div>
-                        </div>
-                        <div class="log_line_message">%s</div>
-                   </div>`;
+    var logLineFormat = "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>";
 
-   var logLine = util.format(logLineFormat, chunk.logTime.toString(), chunk.logLevel, chunk.iumRule, chunk.thread, chunk.shortMessage, chunk.message);
+   var logLine = util.format(logLineFormat, chunk.logTime.toString(), chunk.logLevel, chunk.iumRule, chunk.thread, chunk.shortMessage);
     this.push(logLine);
     callback();
   });
@@ -134,9 +124,20 @@ setTimeout(function(){
 }, 3000);
 */
 app.get('/', function (req, res) {
-  res.write("<html><head><title>eIUM Log View</title><link rel='stylesheet' type='text/css' href='main.css'></head><body>");
+  res.write(`<html>
+                <head><title>eIUM Log View</title>
+                <link href="css/bootstrap.min.css" rel="stylesheet">
+                </head><body><table class="table table-bordered table-striped">
+                <thead class="thead-inverse">
+                <tr><td>date</td><td>thread</td><td>rule</td><td>log level</td><td>short message</td></tr>
+                </thead>
+                <tbody>
+        `);
   fs.createReadStream("ocs.log").pipe(spiltLine()).pipe(reAlignLine()).pipe(parseLogLine()).pipe(formatHtml()).on('end', function() {
-    res.write("</body></html>");
+    res.write(`</tbody></table>
+                    <script src="//cdn.bootcss.com/jquery/1.11.3/jquery.min.js"></script>
+                    <script src="js/bootstrap.min.js"></script>
+                </body></html>`);
     console.log("--------------------------------------------------------------");
     res.end();
   }).pipe(res, {end:false});
