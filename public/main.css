@@ -1,0 +1,14 @@
+div.log_line_head {
+display:inline;
+}
+
+.log_line_time, .log_line_thread, .log_line_log_level, .log_line_rule, .log_line_short_message {
+    display:inline;
+    border-style:solid;
+    border-width:thin;
+    border-color:#ebebeb
+}
+
+.log_line_message {
+    display:none;
+}
