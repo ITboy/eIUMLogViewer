@@ -33,10 +33,10 @@ var reAlignLine = function() {
   var alignLine;
 
   return through2(function(chunk, end, callback) {
-    var dataLength = 23;
-    var dataStr = chunk.slice(0, dataLength);
+    var dateLength = 23;
+    var dateStr = chunk.slice(0, dateLength);
 
-    var date = moment(dataStr, "MM/DD/YYYY HH:mm:ss.SSS", true);
+    var date = moment(dateStr.toString(), "MM/DD/YYYY HH:mm:ss.SSS", true);
 
     if (!date.isValid()) {
       alignLine = Buffer.concat([alignLine, chunk]);
@@ -61,7 +61,8 @@ var parseLogLine = function() {
     var logLevelStr = headArray[5];
     var message = chunkStr.substr(logTimeStr.length + thread.length + iumRuleStr.length + logLevelStr.length + 4);
 
-    var logTime = moment(logTimeStr, "MM-DD-YYYY HH:mm:ss Z");
+    console.log(logTimeStr);
+    var logTime = moment(logTimeStr, "MM-DD-YYYY HH:mm:ss.SSS Z");
     var iumRule = iumRuleStr.substr(1, iumRuleStr.length-2);
     var logLevel = logLevelStr.substr(0, logLevelStr.length-1);
     var shortMessage = message.substr(0, 300);
@@ -88,9 +89,9 @@ var parseLogLine = function() {
 
 var formatHtml = function() {
   return through2({objectMode: true}, function(chunk, enc, callback) {
-    var logLineFormat = "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>";
+    var logLineFormat = "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>";
 
-   var logLine = util.format(logLineFormat, chunk.logTime.toString(), chunk.logLevel, chunk.iumRule, chunk.thread, chunk.shortMessage);
+    var logLine = util.format(logLineFormat, chunk.logTime.format("YYYY-MM-DD"), chunk.logTime.format("HH:mm:ss.SSS"), chunk.logLevel, chunk.iumRule, chunk.thread, chunk.shortMessage);
     this.push(logLine);
     callback();
   });
@@ -124,20 +125,55 @@ setTimeout(function(){
 }, 3000);
 */
 app.get('/', function (req, res) {
-  res.write(`<html>
-                <head><title>eIUM Log View</title>
-                <link href="css/bootstrap.min.css" rel="stylesheet">
-                </head><body><table class="table table-bordered table-striped">
-                <thead class="thead-inverse">
-                <tr><td>date</td><td>thread</td><td>rule</td><td>log level</td><td>short message</td></tr>
-                </thead>
+  res.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">
+<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+<style>
+th
+{
+border-bottom: 1px solid #d6d6d6;
+}
+tr:nth-child(even)
+{
+background:#e9e9e9;
+}
+</style>
+</head>
+<body>
+
+<div data-role="page" id="pageone">
+  <div data-role="header">
+    <h1>eIUM log viewer</h1>
+  </div>
+
+  <div data-role="main" class="ui-content">
+    <form>
+      <input id="filterTable-input" data-type="search" placeholder="Search ...">
+    </form>
+    <table data-role="table" data-mode="columntoggle" class="ui-responsive ui-shadow" id="myTable" data-filter="true" data-input="#filterTable-input">
+      <thead>
+        <tr>
+          <th data-priority="1">Date</th>
+          <th data-priority="6">Time</th>
+          <th data-priority="2">Thread</th>
+          <th data-priority="3">eIUM Rule</th>
+          <th data-priority="4">Log Level</th>
+          <th data-priority="5">Short Message</th>
+        </tr>
+      </thead>
                 <tbody>
         `);
   fs.createReadStream("ocs.log").pipe(spiltLine()).pipe(reAlignLine()).pipe(parseLogLine()).pipe(formatHtml()).on('end', function() {
-    res.write(`</tbody></table>
-                    <script src="//cdn.bootcss.com/jquery/1.11.3/jquery.min.js"></script>
-                    <script src="js/bootstrap.min.js"></script>
-                </body></html>`);
+    res.write(`</tbody>
+    </table>
+  </div>
+</div>
+</body>
+</html>`);
     console.log("--------------------------------------------------------------");
     res.end();
   }).pipe(res, {end:false});
