@@ -1,0 +1,32 @@
+extends layout
+
+block content
+                h1 eIUMLogViewer
+                div#pageone(data-role="page")
+                        div.ui-content(data-role="main")
+                                form
+                                        input#filterTable-input(data-type="search" placeholder="Search ...")
+                                        table#myTable.ui-responsive.ui-shadow&attributes({
+                                                'data-role': 'table',
+                                                'data-mode': 'columntoggle',
+                                                'data-filter': "true",
+                                                'data-input': "#filterTable-input"
+                                        })
+                                                thead
+                                                        tr
+                                                                th(data-priority="1") Date
+                                                                th(data-priority="2") Time
+                                                                th(data-priority="3") Log Level
+                                                                th(data-priority="4") eIUM Rule
+                                                                th(data-priority="5") Thread
+                                                                th(data-priority="6") Short Message
+                                                tbody
+                                                        #{log_body_content}
+                        div#active-message(data-role="popup" style="width=400px; height=400px")
+                            div(data-role="header")
+                                h1 Message
+                            div(data-role="main" class="ui-content")
+                                hahahah
+                            div(data-role="footer")
+                                h1 Footer Text
+                        a#triger-click(href="#active-message" data-rel="popup" data-position-to="window") click
