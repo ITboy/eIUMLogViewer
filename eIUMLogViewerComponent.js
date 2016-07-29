@@ -5,6 +5,7 @@ var through2 = require("through2");
 var moment = require("moment");
 var express = require("express");
 var app = express();
+var SNME2json = require("SNME2Json");
 
 var spiltLine = function() {
   var data = new Buffer("");
@@ -63,19 +64,23 @@ var parseLogLine = function() {
     var message = chunkStr.substr(logTimeStr.length + thread.length + iumRuleStr.length + logLevelStr.length + 4);
 
     console.log(logTimeStr);
-    var logTime = moment(logTimeStr, "MM-DD-YYYY HH:mm:ss.SSS Z");
+    var logFullTime = moment(logTimeStr, "MM-DD-YYYY HH:mm:ss.SSS Z");
+    var logDate = logFullTime.format("YYYY-MM-DD");
+    var logTime = logFullTime.format("HH:mm:ss.SSS");
     var iumRule = iumRuleStr.substr(1, iumRuleStr.length-2);
     var logLevel = logLevelStr.substr(0, logLevelStr.length-1);
     var shortMessage = message.substr(0, 300);
 
     this.push(
       {
-        logTime:logTime,
-        thread:thread,
-        logLevel:logLevel,
-        iumRule:iumRule,
-        shortMessage:shortMessage,
-        message:message
+        logDate: logDate,
+        logTime: logTime,
+        thread: thread,
+        logLevel: logLevel,
+        iumRule: iumRule,
+        shortMessage: shortMessage,
+        message: message,
+        objectMessage: parseMessage(message),
       }
     );
     callback();
@@ -84,12 +89,64 @@ var parseLogLine = function() {
 
 var formatHtml = function() {
   return through2({objectMode: true}, function(chunk, enc, callback) {
-    var logLineFormat = "<tr class='log_line'><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td style='display:none'>%s</td></tr>";
+    var logLineFormat = `
+                <div class="panel panel-default">
+                  <a data-toggle="collapse" href="#collapse" class="list-group-item">
+                        <div class='col-md-1'>%s</div>
+                        <div class='col-md-1'>%s</div>
+                        <div class='col-md-1'>%s</div>
+                        <div class='col-md-2'>%s</div>
+                        <div class='col-md-2'>%s</div>
+                        <div class='col-md-5'>%s</div
+                  </a>
+                  <div id="collapse" class="panel-collapse collapse">
+                    <div class="panel-body">%s</div>
+                  </div>
+                </div>`;
 
     var logLine = util.format(logLineFormat, chunk.logTime.format("YYYY-MM-DD"), chunk.logTime.format("HH:mm:ss.SSS"), chunk.logLevel, chunk.iumRule, chunk.thread, chunk.shortMessage, chunk.message);
     this.push(logLine);
     callback();
   });
+};
+
+var parseMessage = function(rawMessage) {
+  var trimMessage = rawMessage.trim();
+  var messageHeader, tmpMessageHeader, nme, snme;
+
+  if (trimMessage.length === 0 || trimMessage[0] !== '[' || trimMessage.indexOf(']') === -1) {
+    return rawMessage;
+  }
+  var nmeStart = trimMessage.indexOf(']') +1;
+  messageHeader = trimMessage.substr(1, nmeStart-1);
+  var leftMessage = trimMessage.substr(nmeStart).trim();
+  var commaArray = leftMessage.split(',');
+
+  if (commaArray.length === 0 || commaArray[1].indexOf("=") === -1) {
+    return rawMessage;
+  }
+
+
+  for (var i=0; i<commaArray.length; i++) {
+    var validateStr = commaArray[i];
+    if (validateStr.indexOf("=") !== -1 && validateStr.indexOf("{") === -1 && validateStr.indexOf("[") === -1) {
+      continue;
+    } else {
+      break;
+    }
+  }
+  var seperatorPos = leftMessage.indexOf(commaArray[i]) - 1;
+  seperatorPos = leftMessage.indexOf('\n', seperatorPos);
+  var nmeStr = leftMessage.substr(0, seperatorPos);
+  var snmeStr = leftMessage.substr(seperatorPos);
+
+  nme = SNME2json.json2TreeViewObj(SNME2json.parseNME(nmeStr));
+  snme = SNME2json.json2TreeViewObj(SNME2json.parseSNME(snmeStr));
+  return {
+    messageHeader: messageHeader,
+    nme: nme,
+    snme: snme
+  };
 };
 
 exports.formatHtml = formatHtml;

@@ -13,4 +13,19 @@ $(function(){
     $("#triger-click").click();
   });
 
+  $("[href^='#nme']").click(function(){
+    var targetId = $(this).attr("href");
+    var targetIndex = targetId.substr("#nme".length);
+    var rawHtml = $("#raw" + targetIndex + " div pre").html();
+    var jsonObj = parseMessage(rawHtml);
+    $("#objNME" + targetIndex).treeview({data:jsonObj.nme});
+  });
+
+  $("[href^='#snme']").click(function(){
+    var targetId = $(this).attr("href");
+    var targetIndex = targetId.substr("#snme".length);
+    var rawHtml = $("#raw" + targetIndex + " div pre").html();
+    var jsonObj = parseMessage(rawHtml);
+    $("#objSNME" + targetIndex).treeview({data:jsonObj.snme});
+  });
 });
