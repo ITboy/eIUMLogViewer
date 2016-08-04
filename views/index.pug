@@ -1,0 +1,20 @@
+extends layout
+
+block content
+  h2 eIUM Log Viewer
+  .container-fluid
+    .panel-heading.panel-title
+        .row
+          .col-md-1.text-center
+            .h4 Date
+          .col-md-1.text-center
+            .h4 Time
+          .col-md-1.text-center
+            .h4 Log Level
+          .col-md-2.text-center
+            .h4 Thread
+          .col-md-2.text-center
+            .h4 eIUM Rule
+          .col-md-5.text-center
+            .h4 Short Message
+    .panel-group#log-line-group
