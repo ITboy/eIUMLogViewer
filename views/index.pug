@@ -2,7 +2,7 @@ extends layout
 
 block content
   h2 eIUM Log Viewer
-  .container-fluid
+  .container-fluid(ng-app='eIUMLogViewerApp')
     .panel-heading.panel-title
         .row
           .col-md-1.text-center
@@ -18,3 +18,35 @@ block content
           .col-md-5.text-center
             .h4 Short Message
     .panel-group#log-line-group
+
+-each log_line, index in log_body_content
+
+        .panel.panel-default
+          .panel-heading.panel-title
+              a(href= '#collapse'+index)&attributes({
+                "data-toggle":"collapse",
+                //"data-parent":"#log-line-group",
+                })
+                .row
+                  .col-md-1.text-center #{log_line.logDate}
+                  .col-md-1.text-center #{log_line.logTime}
+                  .col-md-1.text-center #{log_line.logLevel}
+                  .col-md-2.wrap-word.text-center #{log_line.thread}
+                  .col-md-2.wrap-word.text-center #{log_line.iumRule}
+                  .col-md-5.wrap-word #{log_line.shortMessage}
+          .panel-collapse.collapse(id="collapse#{index}")
+            ul.nav.nav-tabs
+              li.active
+                a(data-toggle="tab", href="#raw#{index}") RAW
+              li
+                a(data-toggle="tab", href="#nme#{index}") NME
+              li
+                a(data-toggle="tab", href="#snme#{index}") SNME
+             .tab-content
+              .tab-pane.fade.in.active(id="raw#{index}")
+                .panel-body.wrap-word
+                  pre !{log_line.message}
+              .tab-pane.fade(id="nme#{index}")
+                div(id="objNME#{index}")
+              .tab-pane.fade(id="snme#{index}")
+                div(id="objSNME#{index}")

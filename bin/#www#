@@ -22,7 +22,7 @@ app.set('port', port);
 var server = http.createServer(app);
 
 /**
- * Create Socket.IO
+ * Create Socket.IO``
  */
 app.createSocket(server);
 

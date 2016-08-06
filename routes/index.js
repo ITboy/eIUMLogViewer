@@ -14,12 +14,6 @@ var io = require('socket.io')(http);
 var server = "snap@15.114.119.56";
 var filename = "/var/opt/SIU_snap/log/ocs.log";
 
-router.on('mount', function(parent) {
-  console.log("index route is mounted");
-  app = parent;
-  io = require('socket.io')(require('http').Server(app));
-});
-
 router.get("/", function(req, res) {
   /*
   var logContent = [];
