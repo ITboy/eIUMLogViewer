@@ -1,21 +1,58 @@
 extends layout
 
 block content
-  h2 eIUM Log Viewer
-  .container-fluid(ng-app='eIUMLogViewerApp' ng-controller='getLogObjController')
+  h1 eIUMLogViewer
+  .container-fluid
+    .row
+      .col-md-9
+      .col-md-1
+        button(type='button', ng-click='refresh()').btn.btn-default#refresh refresh
+      .col-md-1
+        button(type='button', ng-click='pause()').btn.btn-default#pause pause
+      .col-md-1
+        button(type='button', ng-click='resume()').btn.btn-default#resume resume
+
     .panel-heading.panel-title
-        .row
-          .col-md-1.text-center
-            .h4 Date
-          .col-md-1.text-center
-            .h4 Time
-          .col-md-1.text-center
-            .h4 Log Level
-          .col-md-2.text-center
-            .h4 Thread
-          .col-md-2.text-center
-            .h4 eIUM Rule
-          .col-md-5.text-center
-            .h4 Short Message
+      .row
+        .col-md-1.text-center
+          .h4 Date
+        .col-md-1.text-center
+          .h4 Time
+        .col-md-1.text-center
+          .h4 Log Level
+        .col-md-2.text-center
+          .h4 Thread
+        .col-md-2.text-center
+          .h4 eIUM Rule
+        .col-md-5.text-center
+          .h4 Short Message
     .panel-group#log-line-group
-    div(ng-bind='name')
+      .panel.panel-default(ng-repeat="logObj in logObjs")
+        .panel-heading.panel-title
+          a(href='#collapse{{$index}}')&attributes({
+              "data-toggle":"collapse",
+              //"data-parent":"#log-line-group",
+            })
+            .row
+              .col-md-1.text-center {{logObj.logDate}}
+              .col-md-1.text-center {{logObj.logTime}}
+              .col-md-1.text-center {{logObj.logLevel}}
+              .col-md-2.wrap-word.text-center {{logObj.thread}}
+              .col-md-2.wrap-word.text-center {{logObj.iumRule}}
+              .col-md-5.wrap-word {{logObj.shortMessage}}
+        .panel-collapse.collapse(id="collapse{{$index}}")
+          ul.nav.nav-tabs
+            li.active
+              a(data-toggle="tab", href="#raw{{$index}}") RAW
+            li
+              a(data-toggle="tab", href="#nme{{$index}}") NME
+            li
+              a(data-toggle="tab", href="#snme{{$index}}") SNME
+          .tab-content
+            .tab-pane.fade.in.active(id="raw{{$index}}")
+              .panel-body.wrap-word
+                pre!='{{logObj.message}}'
+            .tab-pane.fade(id="nme{{$index}}")
+              div(id="objNME{{$index}}")
+            .tab-pane.fade(id="snme{{$index}}")
+              div(id="objSNME{{$index}}")
