@@ -4,35 +4,40 @@
 var app = angular.module('eIUMLogViewerApp', []);
 
 app.controller('getLogObjController', function($scope, $timeout){
-  var socket = io("http://127.0.0.1:3000");
+  var socket = io("http://204.44.89.221:3000");
   $scope.logObjs = [];
 
   // schedule to fetch data
 
-  var FETCH_DATA_INTERVAL = 1000;
-  var nextKey, firstKey;
+  const FETCH_DATA_INTERVAL = 200;
+  const FETCH_DATA_COUNT = 20;
+  var nextKey =0 , firstKey = 0;
+  var fetchDataTimer;
 
-  var fetchDataTimer = setInterval(function() {
+  var showLog = function() {
     console.log('timer... nextKey: ' + nextKey);
-    if (nextKey) {
-      fetchData(nextKey, FETCH_DATA_COUNT, function(log) {
-        console.dir(log);
-        $scope.logObjs.unshift(log);
-        $scope.$apply();
-        nextKey += 1;
+      fetchData(nextKey, FETCH_DATA_COUNT, function(logs) {
+        //console.dir(log);
+        if (logs && logs.length > 0) {
+          async.each(logs, function(log) {
+            $scope.logObjs.unshift(log);
+          });
+          $scope.$apply();
+          nextKey += logs.length;
+        }
+        fetchDataTimer = setTimeout(showLog, FETCH_DATA_INTERVAL);
       });
-    }
-  }, FETCH_DATA_INTERVAL);
+  };
 
   // socket io event handler
   socket.on('data', function(data){
-    console.log('recevie data:' + data);
+    console.log('recevie data:' + data.length);
 
-    for (i = 0; i<data.length; i++) {
-      //$scope.logObjs.unshift(data[i]);
-      addLog(data[i]);
+    addLog(data);
+
+    if (!fetchDataTimer) {
+      showLog();
     }
-    //$scope.$apply();
   });
 
   $scope.refresh = function() {
@@ -55,10 +60,10 @@ app.controller('getLogObjController', function($scope, $timeout){
   const DB_NAME = 'eIUMLogViewerDB';
   const DB_VERSION = 1;
   const DB_STORE_NAME = 'eIUMLog';
-  const FETCH_DATA_COUNT = 5;
+
   var db;
 
-  var openDb = function() {
+  var openDb = function(callback) {
     console.log("openDb ...");
     var req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onsuccess = function (evt) {
@@ -67,16 +72,18 @@ app.controller('getLogObjController', function($scope, $timeout){
       // db = req.result;
       db = this.result;
       console.log("openDb DONE");
-      clearObjectStore();
+      callback(null);
     };
+
     req.onerror = function (evt) {
       console.error("openDb:", evt.target.errorCode);
+      callback(evt.target.errorCode);
     };
 
     req.onupgradeneeded = function (evt) {
       console.log("openDb.onupgradeneeded");
       var store = evt.currentTarget.result.createObjectStore(
-        DB_STORE_NAME, { keyPath: 'id', autoIncrement: true });
+        DB_STORE_NAME, { keyPath: 'id'});
     };
   };
 
@@ -89,42 +96,45 @@ app.controller('getLogObjController', function($scope, $timeout){
     return tx.objectStore(store_name);
   };
 
-  var clearObjectStore = function(store_name) {
+  var clearObjectStore = function(callback, store_name) {
     var store = getObjectStore(DB_STORE_NAME, 'readwrite');
     var req = store.clear();
     req.onsuccess = function(evt) {
       console.log("Store cleared");
+      callback(null);
     };
     req.onerror = function (evt) {
       console.error("clearObjectStore:", evt.target.errorCode);
+      callback(evt.target.errorCode);
     };
   };
-
-  var addLog = function(log) {
-    console.log("add Log arguments:", arguments);
+  var logId = 0;
+  var addLog = function(logs) {
+    console.log("add Log" + logId);
 
     var store = getObjectStore(DB_STORE_NAME, 'readwrite');
     var req;
-    try {
-      req = store.add(log);
-    } catch (e) {
-      if (e.name == 'DataCloneError')
-        console.log("This engine doesn't know how to clone a Blob, " +
-                    "use Firefox");
-      throw e;
-    }
-    req.onsuccess = function (evt) {
-      console.log("Insertion in DB successful");
-      if (!firstKey) {
-        // set 1 to firstKey, so the next add Log will not enter this block
-        // and do the fetchFirstKey again.
-        firstKey = 1;
-        fetchFirstKey();
+    for (i in logs) {
+      try {
+        req = store.add(logs[i]);
+        req.logId = logId;
+        console.time(logId);
+        logId ++;
+
+      } catch (e) {
+        if (e.name == 'DataCloneError')
+          console.log("This engine doesn't know how to clone a Blob, " +
+                      "use Firefox");
+        throw e;
       }
-    };
-    req.onerror = function() {
-      console.error("add log error", this.error);
-    };
+      req.onsuccess = function (evt) {
+        console.log("Insertion in DB successful:" + evt.target.logId);
+        console.timeEnd(evt.target.logId);
+      };
+      req.onerror = function() {
+        console.error("add log error", this.error);
+      };
+    }
   };
 
   var fetchFirstKey = function() {
@@ -149,21 +159,22 @@ app.controller('getLogObjController', function($scope, $timeout){
   };
 
   var fetchData = function(startKey, recordCount, callback) {
-    var store = getObjectStore(DB_STORE_NAME, 'readwrite');
+    var store = getObjectStore(DB_STORE_NAME, 'readonly');
     var req;
     var keyRangeValue = IDBKeyRange.bound(startKey, startKey + recordCount, false, true);
-
+    var logs = [];
     req = store.openCursor(keyRangeValue);
 
     req.onsuccess = function(event) {
       var cursor = event.target.result;
       if(cursor) {
-        var value = cursor.value;
-        callback(value);
+        console.log('fetch data..');
+        logs.push(cursor.value);
         cursor.continue();
       } else {
         // no more results
         console.log('fetchData: No more results');
+        callback(logs);
       }
     };
     req.onerror = function() {
@@ -171,5 +182,14 @@ app.controller('getLogObjController', function($scope, $timeout){
     };
   };
 
-  openDb();
+  async.series([
+    function(callback) {
+      openDb(callback);
+    },
+    function(callback) {
+      clearObjectStore(callback, DB_STORE_NAME);
+    }
+    ], function(err, results) {
+
+    });
 });

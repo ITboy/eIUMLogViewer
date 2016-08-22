@@ -5,7 +5,8 @@ var eIUMLogViewer = require("./eIUMLogViewerComponent");
 var spawn = require('child_process').spawn;
 
 const BIN_DIR='D:';
-const logFile = '/f/LEO/project/eIUMLogViewer/ocs.log';
+//const logFile = '/f/LEO/project/eIUMLogViewer/ocs.log';
+const logFile = 'ocs.log';
 var createSocket = function(http) {
   var io = new Server(http);
   var stream;
@@ -16,13 +17,13 @@ var createSocket = function(http) {
     if (tail) {
       tail.kill();
     }
-    tail = spawn('D:\\tail.exe', ['-n', '+0', '-f', logFile]);
+    tail = spawn('tail', ['-n', '+0', '-f', logFile]);
     //stream = fs.createReadStream(path.join(__dirname, "ocs.log"))
     stream = tail.stdout
       .pipe(eIUMLogViewer.spiltLine())
       .pipe(eIUMLogViewer.reAlignLine())
       .pipe(eIUMLogViewer.parseLogLine())
-      .pipe(eIUMLogViewer.bufferedLog(10, 100), {end: false})
+      .pipe(eIUMLogViewer.bufferedLog(500, 500), {end: false})
       .on('data', function(chunk, enc, callback) {
         console.log("read data");
         socket.emit('data', chunk);
@@ -41,7 +42,7 @@ var createSocket = function(http) {
         .pipe(eIUMLogViewer.spiltLine())
         .pipe(eIUMLogViewer.reAlignLine())
         .pipe(eIUMLogViewer.parseLogLine())
-        .pipe(eIUMLogViewer.bufferedLog(1, 1000), {end: false})
+        .pipe(eIUMLogViewer.bufferedLog(100, 1000), {end: false})
         .on('data', function(chunk, enc, callback) {
           console.log("read data");
           socket.emit('data', chunk);

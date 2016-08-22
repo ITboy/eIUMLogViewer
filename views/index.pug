@@ -15,6 +15,8 @@ block content
     .panel-heading.panel-title
       .row
         .col-md-1.text-center
+          .h4 ID
+        .col-md-1.text-center
           .h4 Date
         .col-md-1.text-center
           .h4 Time
@@ -24,7 +26,7 @@ block content
           .h4 Thread
         .col-md-2.text-center
           .h4 eIUM Rule
-        .col-md-5.text-center
+        .col-md-4.text-center
           .h4 Short Message
     .panel-group#log-line-group
       .panel.panel-default(ng-repeat="logObj in logObjs")
@@ -34,12 +36,13 @@ block content
               //"data-parent":"#log-line-group",
             })
             .row
+              .col-md-1.text-center {{logObj.id}}
               .col-md-1.text-center {{logObj.logDate}}
               .col-md-1.text-center {{logObj.logTime}}
               .col-md-1.text-center {{logObj.logLevel}}
               .col-md-2.wrap-word.text-center {{logObj.thread}}
               .col-md-2.wrap-word.text-center {{logObj.iumRule}}
-              .col-md-5.wrap-word {{logObj.shortMessage}}
+              .col-md-4.wrap-word {{logObj.shortMessage}}
         .panel-collapse.collapse(id="collapse{{$index}}")
           ul.nav.nav-tabs
             li.active

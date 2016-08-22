@@ -55,6 +55,7 @@ var reAlignLine = function() {
 };
 
 var parseLogLine = function() {
+  var logIndex = 0;
   return through2(option, function(chunk, enc, callback) {
     var chunkStr = chunk.toString("utf8");
     var headArray = chunkStr.split(" ", 6);
@@ -64,7 +65,7 @@ var parseLogLine = function() {
     var logLevelStr = headArray[5];
     var message = chunkStr.substr(logTimeStr.length + thread.length + iumRuleStr.length + logLevelStr.length + 4);
 
-    console.log(logTimeStr);
+    //console.log(logTimeStr);
     var logFullTime = moment(logTimeStr, "MM-DD-YYYY HH:mm:ss.SSS Z");
     var logDate = logFullTime.format("YYYY-MM-DD");
     var logTime = logFullTime.format("HH:mm:ss.SSS");
@@ -72,8 +73,8 @@ var parseLogLine = function() {
     var logLevel = logLevelStr.substr(0, logLevelStr.length-1);
     var shortMessage = message.substr(0, 300);
 
-    this.push(
-      {
+    var logObj = {
+        id: logIndex++,
         logDate: logDate,
         logTime: logTime,
         thread: thread,
@@ -82,8 +83,9 @@ var parseLogLine = function() {
         shortMessage: shortMessage,
         message: message,
         objectMessage: parseMessage(message),
-      }
-    );
+      };
+    //console.dir(logObj);
+    this.push(logObj);
     callback();
   });
 };
